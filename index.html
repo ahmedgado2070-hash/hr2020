@@ -1,0 +1,547 @@
+
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>نظام إدارة الشركات</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+
+<style>
+* { box-sizing:border-box; }
+
+body {
+    margin:0;
+    font-family:Tahoma,Arial;
+    background:#eef2f7;
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    padding:20px;
+}
+
+.container {
+    width:100%;
+    max-width:440px;
+    background:white;
+    padding:30px;
+    border-radius:16px;
+    box-shadow:0 8px 35px #0001;
+}
+
+h2 {
+    text-align:center;
+    color:#17365d;
+    margin-top:0;
+}
+
+.subtitle {
+    text-align:center;
+    color:#777;
+    margin-bottom:25px;
+}
+
+input {
+    width:100%;
+    padding:13px;
+    margin:7px 0 15px;
+    border:1px solid #ddd;
+    border-radius:8px;
+    font-size:15px;
+    outline:none;
+}
+
+input:focus {
+    border-color:#2878d0;
+}
+
+label {
+    font-size:14px;
+    font-weight:bold;
+    color:#333;
+}
+
+button {
+    width:100%;
+    padding:13px;
+    border:0;
+    border-radius:8px;
+    background:#1769aa;
+    color:white;
+    font-size:16px;
+    cursor:pointer;
+    margin-top:8px;
+}
+
+button:hover { background:#10558c; }
+
+.secondary {
+    background:#198754;
+}
+
+.link {
+    text-align:center;
+    color:#1769aa;
+    cursor:pointer;
+    margin-top:20px;
+    font-size:14px;
+}
+
+.hidden { display:none !important; }
+
+.message {
+    padding:12px;
+    border-radius:8px;
+    margin:12px 0;
+    font-size:13px;
+    display:none;
+}
+
+.error {
+    display:block;
+    background:#fee2e2;
+    color:#b91c1c;
+}
+
+.success {
+    display:block;
+    background:#dcfce7;
+    color:#166534;
+}
+
+.welcome {
+    text-align:center;
+    background:#edf6ff;
+    border-radius:12px;
+    padding:25px 12px;
+    margin:20px 0;
+}
+
+.company {
+    color:#1769aa;
+    font-size:22px;
+    font-weight:bold;
+}
+
+.info {
+    text-align:right;
+    line-height:2.2;
+    background:#f7f8fa;
+    padding:15px;
+    border-radius:8px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<!-- شاشة تسجيل الدخول -->
+<section id="loginScreen">
+
+<h2>تسجيل الدخول</h2>
+<p class="subtitle">مرحباً بك في نظام إدارة الشركات</p>
+
+<div id="loginMessage" class="message"></div>
+
+<label>اسم المستخدم</label>
+<input id="loginUsername"
+       placeholder="أدخل اسم المستخدم"
+       autocomplete="username">
+
+<label>كلمة المرور</label>
+<input id="loginPassword"
+       type="password"
+       placeholder="أدخل كلمة المرور"
+       autocomplete="current-password">
+
+<button id="loginBtn" onclick="login()">
+دخول
+</button>
+
+<div class="link" onclick="showRegister()">
+ليس لديك حساب؟ إنشاء مستخدم جديد
+</div>
+
+</section>
+
+
+<!-- شاشة إنشاء مستخدم جديد -->
+<section id="registerScreen" class="hidden">
+
+<h2>إنشاء مستخدم جديد</h2>
+<p class="subtitle">يرجى إدخال بيانات التسجيل</p>
+
+<div id="registerMessage" class="message"></div>
+
+<label>اسم المستخدم</label>
+<input id="regUsername"
+       placeholder="اسم المستخدم بالإنجليزية والأرقام">
+
+<label>كلمة المرور</label>
+<input id="regPassword"
+       type="password"
+       placeholder="8 أحرف على الأقل"
+       autocomplete="new-password">
+
+<label>تأكيد كلمة المرور</label>
+<input id="regConfirm"
+       type="password"
+       placeholder="أعد كتابة كلمة المرور"
+       autocomplete="new-password">
+
+<label>رقم الهاتف</label>
+<input id="regPhone"
+       type="tel"
+       placeholder="رقم الهاتف">
+
+<label>العنوان</label>
+<input id="regAddress"
+       placeholder="العنوان">
+
+<label>اسم الشركة</label>
+<input id="regCompany"
+       placeholder="اسم الشركة">
+
+<button id="registerBtn" class="secondary"
+        onclick="registerUser()">
+حفظ وإنشاء الحساب
+</button>
+
+<div class="link" onclick="showLogin()">
+العودة إلى تسجيل الدخول
+</div>
+
+</section>
+
+
+<!-- الصفحة الرئيسية -->
+<section id="homeScreen" class="hidden">
+
+<h2>الصفحة الرئيسية</h2>
+
+<div class="welcome">
+    <p>مرحباً بك</p>
+    <div id="welcomeName"></div>
+    <p>أهلاً بك في شركة</p>
+    <div class="company" id="welcomeCompany"></div>
+</div>
+
+<div class="info">
+    <b>اسم المستخدم:</b>
+    <span id="profileUsername"></span>
+    <br>
+
+    <b>الشركة:</b>
+    <span id="profileCompany"></span>
+    <br>
+
+    <b>الهاتف:</b>
+    <span id="profilePhone"></span>
+    <br>
+
+    <b>العنوان:</b>
+    <span id="profileAddress"></span>
+</div>
+
+<button onclick="logout()" style="background:#dc3545">
+تسجيل الخروج
+</button>
+
+</section>
+
+</div>
+
+
+<script>
+
+// تحويل اسم المستخدم إلى معرّف دخول داخلي
+function makeLoginEmail(username) {
+    return username.toLowerCase() + "@" + LOGIN_DOMAIN;
+}
+
+// إظهار شاشة واحدة
+function showScreen(screen) {
+    ["loginScreen","registerScreen","homeScreen"]
+    .forEach(id => {
+        document.getElementById(id).classList.add("hidden");
+    });
+
+    document.getElementById(screen).classList.remove("hidden");
+}
+
+function showRegister() {
+    clearMessages();
+    showScreen("registerScreen");
+}
+
+function showLogin() {
+    clearMessages();
+    showScreen("loginScreen");
+}
+
+function showMessage(id, message, type) {
+    const box = document.getElementById(id);
+    box.textContent = message;
+    box.className = "message " + type;
+}
+
+function clearMessages() {
+    ["loginMessage","registerMessage"].forEach(id => {
+        const el = document.getElementById(id);
+        el.textContent = "";
+        el.className = "message";
+    });
+}
+
+function normalizeUsername(value) {
+    return value.trim().toLowerCase();
+}
+
+function validUsername(value) {
+    return /^[a-z0-9._-]{3,30}$/.test(value);
+}
+
+
+// إنشاء مستخدم جديد
+async function registerUser() {
+
+    const btn = document.getElementById("registerBtn");
+    const username = normalizeUsername(
+        document.getElementById("regUsername").value
+    );
+
+    const password =
+        document.getElementById("regPassword").value;
+
+    const confirm =
+        document.getElementById("regConfirm").value;
+
+    const phone =
+        document.getElementById("regPhone").value.trim();
+
+    const address =
+        document.getElementById("regAddress").value.trim();
+
+    const company =
+        document.getElementById("regCompany").value.trim();
+
+    if (!validUsername(username)) {
+        return showMessage(
+            "registerMessage",
+            "اسم المستخدم يجب أن يكون 3 إلى 30 حرفاً إنجليزياً أو رقماً.",
+            "error"
+        );
+    }
+
+    if (password.length < 8) {
+        return showMessage(
+            "registerMessage",
+            "كلمة المرور يجب ألا تقل عن 8 أحرف.",
+            "error"
+        );
+    }
+
+    if (password !== confirm) {
+        return showMessage(
+            "registerMessage",
+            "كلمتا المرور غير متطابقتين.",
+            "error"
+        );
+    }
+
+    if (!phone || !address || !company) {
+        return showMessage(
+            "registerMessage",
+            "يرجى استكمال جميع البيانات.",
+            "error"
+        );
+    }
+
+    btn.disabled = true;
+    btn.textContent = "جاري إنشاء الحساب...";
+
+    try {
+
+        const { data, error } = await db.auth.signUp({
+            email: makeLoginEmail(username),
+            password: password,
+
+            options: {
+                data: {
+                    username: username,
+                    phone: phone,
+                    address: address,
+                    company_name: company
+                }
+            }
+        });
+
+        if (error) throw error;
+
+        if (!data.session) {
+            throw new Error(
+                "لم يتم تفعيل الدخول التلقائي. راجع إعداد Confirm Email في Supabase."
+            );
+        }
+
+        showMessage(
+            "registerMessage",
+            "تم إنشاء الحساب بنجاح.",
+            "success"
+        );
+
+        await loadProfile();
+
+    } catch (error) {
+
+        showMessage(
+            "registerMessage",
+            "تعذر إنشاء الحساب: " + error.message,
+            "error"
+        );
+
+    } finally {
+        btn.disabled = false;
+        btn.textContent = "حفظ وإنشاء الحساب";
+    }
+}
+
+
+// تسجيل الدخول
+async function login() {
+
+    const username = normalizeUsername(
+        document.getElementById("loginUsername").value
+    );
+
+    const password =
+        document.getElementById("loginPassword").value;
+
+    if (!validUsername(username) || !password) {
+        return showMessage(
+            "loginMessage",
+            "أدخل اسم المستخدم وكلمة المرور بشكل صحيح.",
+            "error"
+        );
+    }
+
+    const btn = document.getElementById("loginBtn");
+    btn.disabled = true;
+    btn.textContent = "جاري التحقق...";
+
+    try {
+
+        const { data, error } =
+            await db.auth.signInWithPassword({
+                email: makeLoginEmail(username),
+                password: password
+            });
+
+        if (error) throw error;
+
+        await loadProfile();
+
+    } catch (error) {
+
+        showMessage(
+            "loginMessage",
+            "اسم المستخدم أو كلمة المرور غير صحيحة.",
+            "error"
+        );
+
+    } finally {
+        btn.disabled = false;
+        btn.textContent = "دخول";
+    }
+}
+
+
+// قراءة بيانات المستخدم من قاعدة البيانات
+async function loadProfile() {
+
+    const { data: authData, error: authError } =
+        await db.auth.getUser();
+
+    if (authError || !authData.user) {
+        showLogin();
+        return;
+    }
+
+    const user = authData.user;
+
+    const { data: profile, error } = await db
+        .from("profiles")
+        .select("username,phone,address,company_name")
+        .eq("id", user.id)
+        .single();
+
+    if (error || !profile) {
+        alert("تعذر تحميل بيانات المستخدم.");
+        return;
+    }
+
+    document.getElementById("welcomeName").textContent =
+        profile.username;
+
+    document.getElementById("welcomeCompany").textContent =
+        profile.company_name;
+
+    document.getElementById("profileUsername").textContent =
+        profile.username;
+
+    document.getElementById("profileCompany").textContent =
+        profile.company_name;
+
+    document.getElementById("profilePhone").textContent =
+        profile.phone;
+
+    document.getElementById("profileAddress").textContent =
+        profile.address;
+
+    showScreen("homeScreen");
+}
+
+
+// تسجيل الخروج
+async function logout() {
+
+    const { error } = await db.auth.signOut();
+
+    if (error) {
+        alert("تعذر تسجيل الخروج: " + error.message);
+        return;
+    }
+
+    document.getElementById("loginPassword").value = "";
+    showLogin();
+}
+
+
+// التحقق من الجلسة عند فتح الموقع
+async function checkSession() {
+
+    const { data, error } = await db.auth.getSession();
+
+    if (error) {
+        showLogin();
+        return;
+    }
+
+    if (data.session) {
+        await loadProfile();
+    } else {
+        showLogin();
+    }
+}
+
+checkSession();
+
+</script>
+
+</body>
+</html>
